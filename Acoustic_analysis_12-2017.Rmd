@@ -32,20 +32,21 @@ library(mapplots)
 library(rgeos)
 library(polyclip)
 library(spatstat)
+library(tidyverse)
+library(Rmisc)
 
 ```
 
 
 
-```{r get_data, include = FALSE}
+```{r get_data, include = FALSE, cache = TRUE}
 #read in data file - see "~/Assigning_regions_to_acoustics.R" for code to assign data to regions
 acoustics = read.csv("~/Documents/R/Dosidicus/acoustics/acousticdata_uper200m_with_regions.csv") 
 acousticdata = acoustics
 ```
 
-You can also embed plots, for example:
 
-```{r plot_cruise_track, include=FALSE}
+```{r plot_cruise_track,include = FALSE}
 library(ggmap)
 library(ggplot2)
 ##### plot google map overlaid with cruise tracks ######
@@ -69,14 +70,210 @@ bc_big <- get_map(location = c(left =-117.04904, bottom = 22.41260, right = -104
 ```
 
 ## Map of cruise track
-```{r}
+```{r, echo = FALSE, warning = FALSE}
 # plot the points and color them by sector
 p <- ggmap(bc_big) + 
-  geom_point(data = acousticdata, mapping = aes(x = Lon_M, y = Lat_M, color = region), size = 0.5, stroke = 0, alpha = 0.9)+
+  geom_point(data = acousticdata, mapping = aes(x = Lon_M, y = Lat_M, color = region), size = 0.3, stroke = 0, alpha = 0.9)+
   guides(colour = guide_legend(override.aes = list(size=2, stroke=1.5)))
 
 p
 
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+## Plot mean Sv by cruise
+```{r, echo = FALSE, warning = FALSE, message=FALSE, fig.width=9, fig.height=9}
+cruise_plot <- function(cruse, seas, yr){ # cntry <- "Canada"
+  
+  #browser()
+#   png <- paste0("cruise", cruse, ".png")
+#   cat("cruise_plot(", cruse, ") -> ", png, "\n")
+#   
+  g <- acousticdata %>%
+    filter(cruise == cruse) %>%
+    ggplot(aes(x=Sv_mean, group = cruise, fill = region)) +
+    geom_histogram(aes(y = ..count../sum(..count..)), binwidth = 5, 
+                   position = "identity", alpha = 0.2, color = "black") +
+    scale_x_continuous(limits = c(-90, -50))+
+    scale_y_continuous(limits = c(0, 0.7))+
+    xlab("Mean Sv") + 
+    ylab("Proportion")+ 
+    ggtitle(paste0("Cruise", " ", cruse, " ", "-", " ", seas, " ", yr))
+  # print(g)
+#   ggsave(png, g)
+}
+
+fig1 <- cruise_plot("1", "Winter", "2005")
+fig2 <- cruise_plot("2", "Winter", "2007")
+fig3 <- cruise_plot("3", "Summer", "2007")
+fig4 <- cruise_plot("4", "Winter", "2010")
+fig6 <- cruise_plot("6", "Winter", "2011")
+fig7 <- cruise_plot("7", "Summer", "2012")
+fig8 <- cruise_plot("8", "Summer", "2013")
+fig9 <- cruise_plot("9", "Winter", "2014")
+fig10 <- cruise_plot("10", "Summer", "2014")
+fig11 <- cruise_plot("11", "Summer", "2016")
+fig12 <- cruise_plot("12", "Summer", "2017")
+
+multiplot(fig1, fig2, fig3, fig4, fig6, fig7, fig8, fig9, fig10, fig11, fig12, cols = 3)
+
+```
+
+### Mean Sv by region, by cruise : Baja
+
+```{r by_region, echo = FALSE, warning = FALSE, message=FALSE, fig.width=9, fig.height=9}
+cruise_plot <- function(cruse, reg, seas, yr){ # cntry <- "Canada"
+  
+  #browser()
+#   png <- paste0("cruise", cruse, ".png")
+#   cat("cruise_plot(", cruse, ") -> ", png, "\n")
+#   
+  g <- acousticdata %>%
+    filter(cruise == cruse) %>%
+    filter(region == reg) %>% 
+    ggplot(aes(x=Sv_mean, group = cruise)) +
+    geom_histogram(aes(y = ..count../sum(..count..)), binwidth = 5, 
+                   position = "identity", alpha = 0.2, color = "black", fill = "red") +
+    scale_x_continuous(limits = c(-90, -50))+
+    scale_y_continuous(limits = c(0, 0.8))+
+    xlab("Mean Sv") + 
+    ylab("Proportion")+ 
+    ggtitle(paste0("Cruise", " ", cruse, " ", "-", " ", seas, " ", yr))
+  # print(g)
+#   ggsave(png, g)
+}
+
+fig1 <- cruise_plot("1", "Baja", "Winter", "2005")
+fig2 <- cruise_plot("2", "Baja","Winter", "2007")
+fig3 <- cruise_plot("3", "Baja","Summer", "2007")
+fig4 <- cruise_plot("4", "Baja","Winter", "2010")
+fig6 <- cruise_plot("6", "Baja","Winter", "2011")
+fig7 <- cruise_plot("7", "Baja","Summer", "2012")
+fig8 <- cruise_plot("8", "Baja","Summer", "2013")
+fig9 <- cruise_plot("9", "Baja","Winter", "2014")
+fig10 <- cruise_plot("10", "Baja","Summer", "2014")
+fig11 <- cruise_plot("11", "Baja","Summer", "2016")
+fig12 <- cruise_plot("12", "Baja","Summer", "2017")
+
+multiplot(fig1, fig2, fig3, fig4, fig6, fig7, fig8, fig9, fig10, fig11, fig12, cols = 3)
+
+```
+
+### Mean Sv by region, by cruise : Sonora
+
+```{r by_region_sonora, echo = FALSE, warning = FALSE, message=FALSE, fig.width=9, fig.height=9}
+cruise_plot <- function(cruse, reg, seas, yr){ # cntry <- "Canada"
+  
+  #browser()
+#   png <- paste0("cruise", cruse, ".png")
+#   cat("cruise_plot(", cruse, ") -> ", png, "\n")
+#   
+  g <- acousticdata %>%
+    filter(cruise == cruse) %>%
+    filter(region == reg) %>% 
+    ggplot(aes(x=Sv_mean, group = cruise)) +
+    geom_histogram(aes(y = ..count../sum(..count..)), binwidth = 5, 
+                   position = "identity", alpha = 0.2, color = "black", fill = "blue") +
+    scale_x_continuous(limits = c(-90, -50))+
+    scale_y_continuous(limits = c(0, 0.8))+
+    xlab("Mean Sv") + 
+    ylab("Proportion")+ 
+    ggtitle(paste0("Cruise", " ", cruse, " ", "-", " ", seas, " ", yr))
+  # print(g)
+#   ggsave(png, g)
+}
+
+fig1 <- cruise_plot("1", "Sonora", "Winter", "2005")
+fig2 <- cruise_plot("2", "Sonora","Winter", "2007")
+fig3 <- cruise_plot("3", "Sonora","Summer", "2007")
+fig4 <- cruise_plot("4", "Sonora","Winter", "2010")
+fig6 <- cruise_plot("6", "Sonora","Winter", "2011")
+fig7 <- cruise_plot("7", "Sonora","Summer", "2012")
+fig8 <- cruise_plot("8", "Sonora","Summer", "2013")
+fig9 <- cruise_plot("9", "Sonora","Winter", "2014")
+fig10 <- cruise_plot("10", "Sonora","Summer", "2014")
+fig11 <- cruise_plot("11", "Sonora","Summer", "2016")
+fig12 <- cruise_plot("12", "Sonora","Summer", "2017")
+
+multiplot(fig1, fig2, fig3, fig4, fig6, fig7, fig8, fig9, fig10, fig11, fig12, cols = 3)
+
+```
+
+### Mean Sv by region, by cruise : Central
+
+```{r by_region_central, echo = FALSE, warning = FALSE, message=FALSE, fig.width=9, fig.height=9}
+cruise_plot <- function(cruse, reg, seas, yr){ # cntry <- "Canada"
+  
+  #browser()
+#   png <- paste0("cruise", cruse, ".png")
+#   cat("cruise_plot(", cruse, ") -> ", png, "\n")
+#   
+  g <- acousticdata %>%
+    filter(cruise == cruse) %>%
+    filter(region == reg) %>% 
+    ggplot(aes(x=Sv_mean, group = cruise)) +
+    geom_histogram(aes(y = ..count../sum(..count..)), binwidth = 5, 
+                   position = "identity", alpha = 0.2, color = "black", fill = "green") +
+    scale_x_continuous(limits = c(-90, -50))+
+    scale_y_continuous(limits = c(0, 0.85))+
+    xlab("Mean Sv") + 
+    ylab("Proportion")+ 
+    ggtitle(paste0("Cruise", " ", cruse, " ", "-", " ", seas, " ", yr))
+  # print(g)
+#   ggsave(png, g)
+}
+
+fig1 <- cruise_plot("1", "Central", "Winter", "2005")
+fig2 <- cruise_plot("2", "Central","Winter", "2007")
+fig3 <- cruise_plot("3", "Central","Summer", "2007")
+fig4 <- cruise_plot("4", "Central","Winter", "2010")
+fig6 <- cruise_plot("6", "Central","Winter", "2011")
+fig7 <- cruise_plot("7", "Central","Summer", "2012")
+fig8 <- cruise_plot("8", "Central","Summer", "2013")
+fig9 <- cruise_plot("9", "Central","Winter", "2014")
+fig10 <- cruise_plot("10", "Central","Summer", "2014")
+fig11 <- cruise_plot("11", "Central","Summer", "2016")
+fig12 <- cruise_plot("12", "Central","Summer", "2017")
+
+multiplot(fig1, fig2, fig3, fig4, fig6, fig7, fig8, fig9, fig10, fig11, fig12, cols = 3)
+
+```
+
+### Mean Sv by region, by cruise : Northern
+
+```{r by_region_northern, echo = FALSE, warning = FALSE, message=FALSE, fig.width=9, fig.height=9}
+cruise_plot <- function(cruse, reg, seas, yr){ # cntry <- "Canada"
+  
+  #browser()
+#   png <- paste0("cruise", cruse, ".png")
+#   cat("cruise_plot(", cruse, ") -> ", png, "\n")
+#   
+  g <- acousticdata %>%
+    filter(cruise == cruse) %>%
+    filter(region == reg) %>% 
+    ggplot(aes(x=Sv_mean, group = cruise)) +
+    geom_histogram(aes(y = ..count../sum(..count..)), binwidth = 5, 
+                   position = "identity", alpha = 0.2, color = "black", fill = "yellow") +
+    scale_x_continuous(limits = c(-90, -50))+
+    scale_y_continuous(limits = c(0, 0.8))+
+    xlab("Mean Sv") + 
+    ylab("Proportion")+ 
+    ggtitle(paste0("Cruise", " ", cruse, " ", "-", " ", seas, " ", yr))
+  # print(g)
+#   ggsave(png, g)
+}
+
+fig1 <- cruise_plot("1", "Northern", "Winter", "2005")
+fig2 <- cruise_plot("2", "Northern","Winter", "2007")
+fig3 <- cruise_plot("3", "Northern","Summer", "2007")
+fig4 <- cruise_plot("4", "Northern","Winter", "2010")
+fig6 <- cruise_plot("6", "Northern","Winter", "2011")
+fig7 <- cruise_plot("7", "Northern","Summer", "2012")
+fig8 <- cruise_plot("8", "Northern","Summer", "2013")
+fig9 <- cruise_plot("9", "Northern","Winter", "2014")
+fig10 <- cruise_plot("10", "Northern","Summer", "2014")
+fig11 <- cruise_plot("11", "Northern","Summer", "2016")
+fig12 <- cruise_plot("12", "Northern","Summer", "2017")
+
+multiplot(fig1, fig2, fig3, fig4, fig6, fig7, fig8, fig9, fig10, fig11, fig12, cols = 3)
+
+```
