@@ -6,7 +6,7 @@ output: html_document
 ---
 
 
-```{r get necessary packages, echo = FALSE, warning=FALSE}
+```{r get necessary packages, include = FALSE}
 # 1) clear workspace
 rm(list = ls(all = TRUE)); 
 
@@ -37,7 +37,7 @@ library(spatstat)
 
 
 
-```{r get_data, echo = FALSE, warning=FALSE}
+```{r get_data, include = FALSE}
 #read in data file - see "~/Assigning_regions_to_acoustics.R" for code to assign data to regions
 acoustics = read.csv("~/Documents/R/Dosidicus/acoustics/acousticdata_uper200m_with_regions.csv") 
 acousticdata = acoustics
@@ -45,7 +45,7 @@ acousticdata = acoustics
 
 You can also embed plots, for example:
 
-```{r plot_cruise_track, echo = FALSE, warning=FALSE, error=FALSE}
+```{r plot_cruise_track, include=FALSE}
 library(ggmap)
 library(ggplot2)
 ##### plot google map overlaid with cruise tracks ######
@@ -65,12 +65,18 @@ bc_big <- get_map(location = c(left =-117.04904, bottom = 22.41260, right = -104
 #> converting bounding box to center/zoom specification. (experimental)
 #> Map from URL : http://maps.googleapis.com/maps/api/staticmap?center=51.86665,-127.98475&zoom=6&size=640x640&scale=2&maptype=terrain&language=en-EN&sensor=false
 
+
+```
+
+## Map of cruise track
+```{r}
 # plot the points and color them by sector
 p <- ggmap(bc_big) + 
-  geom_point(data = acousticdata, mapping = aes(x = Lon_M, y = Lat_M, color = region), size = 0.1, stroke = 0, alpha = 0.9)+
+  geom_point(data = acousticdata, mapping = aes(x = Lon_M, y = Lat_M, color = region), size = 0.5, stroke = 0, alpha = 0.9)+
   guides(colour = guide_legend(override.aes = list(size=2, stroke=1.5)))
 
 p
+
 ```
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
