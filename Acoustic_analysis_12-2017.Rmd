@@ -1,7 +1,7 @@
 ---
 title: "Acoustic analysis"
 author: "Elan Portner"
-date: "12/2/2017"
+date: "12/3/2017"
 output: html_document
 ---
 
@@ -39,10 +39,15 @@ library(Rmisc)
 
 
 
-```{r get_data, include = FALSE, cache = TRUE}
+```{r get_data, include = FALSE}
 #read in data file - see "~/Assigning_regions_to_acoustics.R" for code to assign data to regions
 acoustics = read.csv("~/Documents/R/Dosidicus/acoustics/acousticdata_uper200m_with_regions.csv") 
 acousticdata = acoustics
+### remove outliers for preliminary figure to improve visualization###
+I = which(log(acousticdata$NASC)>12|log(acousticdata$NASC)<0)
+acousticdata = acousticdata[-I,]
+acousticdata$fill = 1
+### 9 data points removed with above code ###
 ```
 
 
@@ -79,6 +84,37 @@ p <- ggmap(bc_big) +
 p
 
 ```
+
+
+### Boxplot of logNASC by cruise*region
+```{r summary_boxplot, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9}
+### create vector of simplified labels 
+cruises = c("", "", "W.05", "","", "", "W.07", "","", "", "S.07", "",
+            "", "", "W.10", "","", "", "W.11", "","", "", "S.12", "",
+            "", "", "S.13", "","", "", "W.14", "","", "", "S.14", "",
+            "", "", "S.16", "","", "", "S.17", "")
+
+# Plot boxplots of scattering area within each polygon by cruise 
+cruisePoly <- ggplot(acousticdata, aes(cpoly, log(NASC), fill = region)) + geom_boxplot() 
+cruisePoly = cruisePoly +scale_x_discrete(labels = cruises)+theme(axis.text.x=element_text(hjust=1))
+cruisePoly = cruisePoly + labs(x="Cruise (Season.Year, where W = winter and S = summer)")
+cruisePoly
+```
+
+
+```{r anova, echo=FALSE, include = FALSE}
+###### run ANOVA(s) to examine with explanatory variables significantly affect backscattering
+acousticdata$season = as.factor(acousticdata$season)
+acousticdata$region = as.factor(acousticdata$region)
+acousticdata$year = as.factor(acousticdata$year)
+```
+
+### ANOVA model: (NASC ~ season*region*year)
+```{r}
+aov.acoustics.nasc <- aov(NASC ~ season*region*year, data = acousticdata)
+summary(aov.acoustics.nasc)
+```
+
 
 ## Plot mean Sv by cruise
 ```{r, echo = FALSE, warning = FALSE, message=FALSE, fig.width=9, fig.height=9}
@@ -118,6 +154,18 @@ multiplot(fig1, fig2, fig3, fig4, fig6, fig7, fig8, fig9, fig10, fig11, fig12, c
 
 ```
 
+### ANOVA model: (Sv_mean ~ cruise*region)
+```{r}
+aov.acoustics.sv2 <- aov(Sv_mean ~ cruise*region, data = acousticdata)
+summary(aov.acoustics.sv2)
+```
+
+### ANOVA model: (Sv_mean ~ season*region*year)
+```{r}
+aov.acoustics.sv <- aov(Sv_mean ~ season*region*year, data = acousticdata)
+summary(aov.acoustics.sv)
+```
+
 ### Mean Sv by region, by cruise : Baja
 
 ```{r by_region, echo = FALSE, warning = FALSE, message=FALSE, fig.width=9, fig.height=9}
@@ -131,10 +179,10 @@ cruise_plot <- function(cruse, reg, seas, yr){ # cntry <- "Canada"
     filter(cruise == cruse) %>%
     filter(region == reg) %>% 
     ggplot(aes(x=Sv_mean, group = cruise)) +
-    geom_histogram(aes(y = ..count../sum(..count..)), binwidth = 5, 
+    geom_histogram(aes(y = ..count../sum(..count..)), binwidth = 3, 
                    position = "identity", alpha = 0.2, color = "black", fill = "red") +
     scale_x_continuous(limits = c(-90, -50))+
-    scale_y_continuous(limits = c(0, 0.8))+
+    scale_y_continuous(limits = c(0, 0.55))+
     xlab("Mean Sv") + 
     ylab("Proportion")+ 
     ggtitle(paste0("Cruise", " ", cruse, " ", "-", " ", seas, " ", yr))
@@ -171,10 +219,10 @@ cruise_plot <- function(cruse, reg, seas, yr){ # cntry <- "Canada"
     filter(cruise == cruse) %>%
     filter(region == reg) %>% 
     ggplot(aes(x=Sv_mean, group = cruise)) +
-    geom_histogram(aes(y = ..count../sum(..count..)), binwidth = 5, 
+    geom_histogram(aes(y = ..count../sum(..count..)), binwidth = 3, 
                    position = "identity", alpha = 0.2, color = "black", fill = "blue") +
     scale_x_continuous(limits = c(-90, -50))+
-    scale_y_continuous(limits = c(0, 0.8))+
+    scale_y_continuous(limits = c(0, 0.55))+
     xlab("Mean Sv") + 
     ylab("Proportion")+ 
     ggtitle(paste0("Cruise", " ", cruse, " ", "-", " ", seas, " ", yr))
@@ -211,10 +259,10 @@ cruise_plot <- function(cruse, reg, seas, yr){ # cntry <- "Canada"
     filter(cruise == cruse) %>%
     filter(region == reg) %>% 
     ggplot(aes(x=Sv_mean, group = cruise)) +
-    geom_histogram(aes(y = ..count../sum(..count..)), binwidth = 5, 
+    geom_histogram(aes(y = ..count../sum(..count..)), binwidth = 3, 
                    position = "identity", alpha = 0.2, color = "black", fill = "green") +
     scale_x_continuous(limits = c(-90, -50))+
-    scale_y_continuous(limits = c(0, 0.85))+
+    scale_y_continuous(limits = c(0, 0.55))+
     xlab("Mean Sv") + 
     ylab("Proportion")+ 
     ggtitle(paste0("Cruise", " ", cruse, " ", "-", " ", seas, " ", yr))
@@ -251,10 +299,10 @@ cruise_plot <- function(cruse, reg, seas, yr){ # cntry <- "Canada"
     filter(cruise == cruse) %>%
     filter(region == reg) %>% 
     ggplot(aes(x=Sv_mean, group = cruise)) +
-    geom_histogram(aes(y = ..count../sum(..count..)), binwidth = 5, 
+    geom_histogram(aes(y = ..count../sum(..count..)), binwidth = 3, 
                    position = "identity", alpha = 0.2, color = "black", fill = "yellow") +
     scale_x_continuous(limits = c(-90, -50))+
-    scale_y_continuous(limits = c(0, 0.8))+
+    scale_y_continuous(limits = c(0, 0.55))+
     xlab("Mean Sv") + 
     ylab("Proportion")+ 
     ggtitle(paste0("Cruise", " ", cruse, " ", "-", " ", seas, " ", yr))
