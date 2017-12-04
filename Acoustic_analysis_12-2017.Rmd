@@ -74,7 +74,7 @@ bc_big <- get_map(location = c(left =-117.04904, bottom = 22.41260, right = -104
 
 ```
 
-## Map of cruise track
+### Map of cruise track
 ```{r, echo = FALSE, warning = FALSE}
 # plot the points and color them by sector
 p <- ggmap(bc_big) + 
@@ -85,8 +85,8 @@ p
 
 ```
 
-#### Data was subsetted by time of day (nighttime = 7pm-6am)
-### Boxplot of logNASC by cruise*region for data extracted from upper water column (10-200m) in 1km chunks
+##### Data was subsetted by time of day (nighttime = 7pm-6am)
+##### Boxplot of logNASC by cruise*region for data extracted from upper water column (10-200m) in 1km chunks
 ```{r summary_boxplot, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9}
 ### create vector of simplified labels 
 cruises = c("", "", "W.05", "","", "", "W.07", "","", "", "S.07", "",
@@ -109,14 +109,14 @@ acousticdata$region = as.factor(acousticdata$region)
 acousticdata$year = as.factor(acousticdata$year)
 ```
 
-### ANOVA model: (NASC ~ season*region*year)
+##### ANOVA model: (NASC ~ season*region*year)
 ```{r}
 aov.acoustics.nasc <- aov(NASC ~ season*region*year, data = acousticdata)
 summary(aov.acoustics.nasc)
 ```
 
 
-## Plot mean Sv by cruise
+#### Plot mean Sv by cruise
 ```{r, echo = FALSE, warning = FALSE, message=FALSE, fig.width=9, fig.height=9}
 cruise_plot <- function(cruse, seas, yr){ # cntry <- "Canada"
   
@@ -154,19 +154,19 @@ multiplot(fig1, fig2, fig3, fig4, fig6, fig7, fig8, fig9, fig10, fig11, fig12, c
 
 ```
 
-### ANOVA model: (Sv_mean ~ cruise*region)
+##### ANOVA model: (Sv_mean ~ cruise*region)
 ```{r}
 aov.acoustics.sv2 <- aov(Sv_mean ~ cruise*region, data = acousticdata)
 summary(aov.acoustics.sv2)
 ```
 
-### ANOVA model: (Sv_mean ~ season*region*year)
+##### ANOVA model: (Sv_mean ~ season*region*year)
 ```{r}
 aov.acoustics.sv <- aov(Sv_mean ~ season*region*year, data = acousticdata)
 summary(aov.acoustics.sv)
 ```
 
-### Mean Sv by region, by cruise : Baja
+##### Mean Sv by region, by cruise : Baja
 
 ```{r by_region, echo = FALSE, warning = FALSE, message=FALSE, fig.width=9, fig.height=9}
 cruise_plot <- function(cruse, reg, seas, yr){ # cntry <- "Canada"
@@ -206,7 +206,7 @@ multiplot(fig1, fig2, fig3, fig4, fig6, fig7, fig8, fig9, fig10, fig11, fig12, c
 
 ```
 
-### Mean Sv by region, by cruise : Sonora
+##### Mean Sv by region, by cruise : Sonora
 
 ```{r by_region_sonora, echo = FALSE, warning = FALSE, message=FALSE, fig.width=9, fig.height=9}
 cruise_plot <- function(cruse, reg, seas, yr){ # cntry <- "Canada"
@@ -246,7 +246,7 @@ multiplot(fig1, fig2, fig3, fig4, fig6, fig7, fig8, fig9, fig10, fig11, fig12, c
 
 ```
 
-### Mean Sv by region, by cruise : Central
+##### Mean Sv by region, by cruise : Central
 
 ```{r by_region_central, echo = FALSE, warning = FALSE, message=FALSE, fig.width=9, fig.height=9}
 cruise_plot <- function(cruse, reg, seas, yr){ # cntry <- "Canada"
@@ -286,7 +286,7 @@ multiplot(fig1, fig2, fig3, fig4, fig6, fig7, fig8, fig9, fig10, fig11, fig12, c
 
 ```
 
-### Mean Sv by region, by cruise : Northern
+##### Mean Sv by region, by cruise : Northern
 
 ```{r by_region_northern, echo = FALSE, warning = FALSE, message=FALSE, fig.width=9, fig.height=9}
 cruise_plot <- function(cruse, reg, seas, yr){ # cntry <- "Canada"
@@ -326,9 +326,9 @@ multiplot(fig1, fig2, fig3, fig4, fig6, fig7, fig8, fig9, fig10, fig11, fig12, c
 
 ```
 
-## To examine changes in vertical distribution of signal, data were re-extracted in 4 vertical bins (10-50m, 50-100m, 100-150m, 150-200m) for every km of cruise track.
+#### To examine changes in vertical distribution of signal, data were re-extracted in 4 vertical bins (10-50m, 50-100m, 100-150m, 150-200m) for every km of cruise track.
 
-### of the 21827 km of cruisetack sampled, 18070 had data from all 4 vertical layers and are included below.
+##### of the 21827 km of cruisetack sampled, 18070 had data from all 4 vertical layers and are included below.
 
 ```{r get_50m_data , include = FALSE}
 ## read data
@@ -349,11 +349,55 @@ test$Layer = as.factor(test$Layer)
 ```
 
 
-```{r plot_propNASC_by_layer, echo = FALSE}
-cruisePoly <- ggplot(test, aes(cpoly, propNASC,col = Layer, pch = region)) + geom_point(size=3) 
+```{r plot_propNASC_by_layer, echo = FALSE, fig.width=8}
+cruisePoly <- ggplot(test, aes(cpoly, propNASC,col = Layer, pch = region)) + geom_point(size=3) + scale_color_brewer(palette = "RdYlBu")
 cruisePoly = cruisePoly +scale_x_discrete(labels = cruises)+theme(axis.text.x=element_text(hjust=1))
 cruisePoly = cruisePoly + labs(x="Cruise (Season.Year, where W = winter and S = summer)")+ggtitle("Proportion of NASC in each vertical 50m Layer (Layer 1 = 10-50m)")
 cruisePoly
 
+```
+
+##### It looks like there is a decrease in the propotion of signal in the upper 50 and an increase between 50 and 100m. To explore "trend" further, data were extrated from upper 100m in 10m bins.
+
+
+
+```{r get_10m_data , include = FALSE}
+## read data
+acousticdata10 = read.csv("~/Documents/R/Dosidicus/acoustics/portner_capegolcas_upper100m_by10m.csv") # "portner_acoustic_data_10-2017.csv"
+
+
+depthdist = aggregate(NASC~Interval*cruise, acousticdata10, sum )
+colnames(depthdist) = c("Interval", "cruise", "NASCsum")
+acousticdata10 = merge(acousticdata10, depthdist, by = c("Interval", "cruise"))
+acousticdata10$propNASC = acousticdata10$NASC/acousticdata10$NASCsum
+
+acousticdata10$Layer = as.integer(acousticdata10$Layer)
+### remove intervals which do not have all nine layers ###
+test_100m = aggregate(Layer~Interval*cruise, acousticdata10, sum)
+colnames(test_100m) = c("Interval", "cruise", "Layersum")
+test_100m_10 = subset(test_100m, Layersum==45)
+test_merge_100m = merge(test_100m_10, acousticdata10,  by = c("Interval", "cruise"))
+
+acousticdata10 = test_merge_100m
+
+test = aggregate(propNASC~cruise*region*Layer, acousticdata10, mean)
+test$cpoly = paste(test$cruise, test$region, sep = "_")
+test$Layer = as.factor(test$Layer)
+
+```
+
+```{r plot_propNASC_by_layer_10m, echo = FALSE, fig.width=8}
+cruisePoly <- ggplot(test, aes(cpoly, propNASC,col = Layer, pch = region)) + geom_point(size=3) + scale_color_brewer(palette = "RdYlBu")
+cruisePoly = cruisePoly +scale_x_discrete(labels = cruises)+theme(axis.text.x=element_text(hjust=1))
+cruisePoly = cruisePoly + labs(x="Cruise (Season.Year, where W = winter and S = summer)")+ggtitle("Proportion of NASC in each vertical 10m Layer (Layer 1 = 10-20m)")
+cruisePoly
+
+```
+
+
+
+```{r plot_depth_dist_by_region, echo = FALSE, fig.width=8, fig.height=21}
+cruisePoly = cruisePoly+geom_line(aes(group=Layer))+facet_wrap(~region, ncol = 1)
+cruisePoly
 ```
 
