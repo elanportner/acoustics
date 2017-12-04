@@ -85,8 +85,8 @@ p
 
 ```
 
-
-### Boxplot of logNASC by cruise*region
+#### Data was subsetted by time of day (nighttime = 7pm-6am)
+### Boxplot of logNASC by cruise*region for data extracted from upper water column (10-200m) in 1km chunks
 ```{r summary_boxplot, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9}
 ### create vector of simplified labels 
 cruises = c("", "", "W.05", "","", "", "W.07", "","", "", "S.07", "",
@@ -325,3 +325,35 @@ fig12 <- cruise_plot("12", "Northern","Summer", "2017")
 multiplot(fig1, fig2, fig3, fig4, fig6, fig7, fig8, fig9, fig10, fig11, fig12, cols = 3)
 
 ```
+
+## To examine changes in vertical distribution of signal, data were re-extracted in 4 vertical bins (10-50m, 50-100m, 100-150m, 150-200m) for every km of cruise track.
+
+### of the 21827 km of cruisetack sampled, 18070 had data from all 4 vertical layers and are included below.
+
+```{r get_50m_data , include = FALSE}
+## read data
+acousticdata50 = read.csv("~/Documents/R/Dosidicus/acoustics/portner_capegolcas_upper200m_by50m.csv")
+
+### remove intervals which do not have all four layers ###
+test_200m = aggregate(Layer~Interval*cruise, acousticdata50, sum)
+colnames(test_200m) = c("Interval", "cruise", "Layersum")
+test_200m_10 = subset(test_200m, Layersum==10)
+test_merge_200m = merge(test_200m_10, acousticdata50,  by = c("Interval", "cruise"))
+
+acousticdata50 <- test_merge_200m
+
+test = aggregate(propNASC~cruise*region*Layer, acousticdata50, mean)
+test$cpoly = paste(test$cruise, test$region, sep = "_")
+test$Layer = as.factor(test$Layer)
+
+```
+
+
+```{r plot_propNASC_by_layer, echo = FALSE}
+cruisePoly <- ggplot(test, aes(cpoly, propNASC,col = Layer, pch = region)) + geom_point(size=3) 
+cruisePoly = cruisePoly +scale_x_discrete(labels = cruises)+theme(axis.text.x=element_text(hjust=1))
+cruisePoly = cruisePoly + labs(x="Cruise (Season.Year, where W = winter and S = summer)")+ggtitle("Proportion of NASC in each vertical 50m Layer (Layer 1 = 10-50m)")
+cruisePoly
+
+```
+
