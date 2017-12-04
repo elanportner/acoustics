@@ -380,7 +380,7 @@ test_merge_100m = merge(test_100m_10, acousticdata10,  by = c("Interval", "cruis
 
 acousticdata10 = test_merge_100m
 
-test = aggregate(propNASC~cruise*region*Layer, acousticdata10, mean)
+test = aggregate(propNASC~cruise*region*Layer, test_merge_100m, mean)
 test$cpoly = paste(test$cruise, test$region, sep = "_")
 test$Layer = as.factor(test$Layer)
 
@@ -401,3 +401,28 @@ cruisePoly = cruisePoly+geom_line(aes(group=Layer))+facet_wrap(~region, ncol = 1
 cruisePoly
 ```
 
+```{r plot_depth_dist_by_region_boxplot, echo = FALSE, fig.width=8, fig.height=21}
+# acousticdata10 = subset(acousticdata10,Sv_mean > -900)
+# 
+# depth_plot <- function(lyr){ # cntry <- "Canada"
+#   
+#   #browser()
+# #   png <- paste0("cruise", cruse, ".png")
+# #   cat("cruise_plot(", cruse, ") -> ", png, "\n")
+# #   
+#   g <- acousticdata10 %>%
+#     filter(Layer == lyr) %>%
+#     ggplot(aes(cpoly, Sv_mean, fill = Layer)) + 
+#     geom_boxplot() + scale_fill_brewer(palette = "RdYlBu")+
+#     scale_x_discrete(labels = cruises)+
+#     theme(axis.text.x=element_text(hjust=1))+
+#     labs(x="Cruise (Season.Year, where W = winter and S = summer)")+
+#     ggtitle("Proportion of NASC in each vertical 10m Layer (Layer 1 = 10-20m)")+
+#     facet_wrap(~region, ncol = 1)
+#  
+#   print(g)
+# #   ggsave(png, g)
+# }
+# 
+# depth_plot("1")
+```
