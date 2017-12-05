@@ -52,8 +52,7 @@ acousticdata$fill = 1
 
 
 ```{r plot_cruise_track,include = FALSE}
-library(ggmap)
-library(ggplot2)
+
 ##### plot google map overlaid with cruise tracks ######
 
 #need to convert longitude back to E/W for plotting map with google
@@ -93,7 +92,7 @@ cruises = c("", "", "W.05", "","", "", "W.07", "","", "", "S.07", "",
             "", "", "W.10", "","", "", "W.11", "","", "", "S.12", "",
             "", "", "S.13", "","", "", "W.14", "","", "", "S.14", "",
             "", "", "S.16", "","", "", "S.17", "")
-
+cruises2 = c("W.05", "W.07", "S.07", "W.10","W.11", "S.12","S.13", "W.14","S.14","S.16","S.17")
 # Plot boxplots of scattering area within each polygon by cruise 
 cruisePoly <- ggplot(acousticdata, aes(cpoly, log(NASC), fill = region)) + geom_boxplot() 
 cruisePoly = cruisePoly +scale_x_discrete(labels = cruises)+theme(axis.text.x=element_text(hjust=1))
@@ -206,6 +205,17 @@ multiplot(fig1, fig2, fig3, fig4, fig6, fig7, fig8, fig9, fig10, fig11, fig12, c
 
 ```
 
+##### ANOVA model subsetted by region:Baja (Sv_mean ~ cruise)
+```{r anova_baja}
+acousticdata_Baja = subset(acousticdata, region == "Baja")
+acousticdata_Baja$cruise = as.factor(acousticdata_Baja$cruise)
+
+aov.acoustics.sv2 <- aov(Sv_mean ~ cruise, data = acousticdata_Baja)
+summary(aov.acoustics.sv2)
+
+TukeyHSD(aov.acoustics.sv2)
+```
+
 ##### Mean Sv by region, by cruise : Sonora
 
 ```{r by_region_sonora, echo = FALSE, warning = FALSE, message=FALSE, fig.width=9, fig.height=9}
@@ -244,6 +254,17 @@ fig12 <- cruise_plot("12", "Sonora","Summer", "2017")
 
 multiplot(fig1, fig2, fig3, fig4, fig6, fig7, fig8, fig9, fig10, fig11, fig12, cols = 3)
 
+```
+
+##### ANOVA model subsetted by region:Sonora (Sv_mean ~ cruise)
+```{r anova_sonora}
+acousticdata_Sonora = subset(acousticdata, region == "Sonora")
+acousticdata_Sonora$cruise = as.factor(acousticdata_Sonora$cruise)
+
+aov.acoustics.sv2 <- aov(Sv_mean ~ cruise, data = acousticdata_Sonora)
+summary(aov.acoustics.sv2)
+
+TukeyHSD(aov.acoustics.sv2)
 ```
 
 ##### Mean Sv by region, by cruise : Central
@@ -286,6 +307,17 @@ multiplot(fig1, fig2, fig3, fig4, fig6, fig7, fig8, fig9, fig10, fig11, fig12, c
 
 ```
 
+##### ANOVA model subsetted by region:Central (Sv_mean ~ cruise)
+```{r anova_central}
+acousticdata_Central = subset(acousticdata, region == "Central")
+acousticdata_Central$cruise = as.factor(acousticdata_Central$cruise)
+
+aov.acoustics.sv2 <- aov(Sv_mean ~ cruise, data = acousticdata_Central)
+summary(aov.acoustics.sv2)
+
+TukeyHSD(aov.acoustics.sv2)
+```
+
 ##### Mean Sv by region, by cruise : Northern
 
 ```{r by_region_northern, echo = FALSE, warning = FALSE, message=FALSE, fig.width=9, fig.height=9}
@@ -326,6 +358,18 @@ multiplot(fig1, fig2, fig3, fig4, fig6, fig7, fig8, fig9, fig10, fig11, fig12, c
 
 ```
 
+##### ANOVA model subsetted by region:Northern (Sv_mean ~ cruise)
+```{r anova_north}
+acousticdata_Northern = subset(acousticdata, region == "Northern")
+acousticdata_Northern$cruise = as.factor(acousticdata_Northern$cruise)
+
+aov.acoustics.sv2 <- aov(Sv_mean ~ cruise, data = acousticdata_Northern)
+summary(aov.acoustics.sv2)
+
+TukeyHSD(aov.acoustics.sv2)
+```
+
+
 #### To examine changes in vertical distribution of signal, data were re-extracted in 4 vertical bins (10-50m, 50-100m, 100-150m, 150-200m) for every km of cruise track.
 
 ##### of the 21827 km of cruisetack sampled, 18070 had data from all 4 vertical layers and are included below.
@@ -357,9 +401,21 @@ cruisePoly
 
 ```
 
-##### It looks like there is a decrease in the propotion of signal in the upper 50 and an increase between 50 and 100m. To explore "trend" further, data were extrated from upper 100m in 10m bins.
+##### ANOVA model: (NASC ~ cruise*layer)
+```{r anov, echo = FALSE}
 
+acousticdata50$Layer = as.factor(acousticdata50$Layer)
+acousticdata50$cruise = as.factor(acousticdata50$cruise)
+acousticdata50$region = as.factor(acousticdata50$region)
 
+aov.acoustics.nasc <- aov(NASC ~ cruise*Layer*region, data = acousticdata50)
+summary(aov.acoustics.nasc)
+
+```
+
+##### It looks like there is a decrease in the propotion of signal in the upper 50 and an increase between 50 and 100m. To explore "trend" further, data were extrated from upper 100m in 10m bins (10-100m = 9 layers).
+
+##### of the 21827 km of cruisetack sampled, 19727 had data from all 9 vertical layers in the upper 100m and are included below.
 
 ```{r get_10m_data , include = FALSE}
 ## read data
@@ -378,7 +434,7 @@ colnames(test_100m) = c("Interval", "cruise", "Layersum")
 test_100m_10 = subset(test_100m, Layersum==45)
 test_merge_100m = merge(test_100m_10, acousticdata10,  by = c("Interval", "cruise"))
 
-acousticdata10 = test_merge_100m
+# acousticdata10 = test_merge_100m
 
 test = aggregate(propNASC~cruise*region*Layer, test_merge_100m, mean)
 test$cpoly = paste(test$cruise, test$region, sep = "_")
@@ -401,11 +457,12 @@ cruisePoly = cruisePoly+geom_line(aes(group=Layer))+facet_wrap(~region, ncol = 1
 cruisePoly
 ```
 
-#### Baja = Red, Central = Orange, Northern = light blue, Sonora = Dark Blue
-```{r plot_depth_dist_by_region_boxplot, echo = FALSE, fig.width=14, fig.height=20}
+
+#### Baja 
+```{r plot_depth_dist_by_region_boxplot_b, echo = FALSE, fig.width=20, fig.height=15}
 acousticdata10 = subset(acousticdata10,Sv_mean > -900)
 
-depth_plot <- function(lyr){ # cntry <- "Canada"
+depth_plot <- function(lyr, rgn){ # cntry <- "Canada"
   
   #browser()
 #   png <- paste0("cruise", cruse, ".png")
@@ -413,26 +470,192 @@ depth_plot <- function(lyr){ # cntry <- "Canada"
 #   
   g <- acousticdata10 %>%
     filter(Layer == lyr) %>%
-    ggplot(aes(cpoly, Sv_mean, fill = region)) + 
+    filter(region == rgn) %>%
+    ggplot(aes(cpoly, Sv_mean)) + 
     geom_boxplot() + scale_fill_brewer(palette = "RdYlBu")+
-    scale_x_discrete(labels = cruises)+
-    theme(axis.text.x=element_text(hjust=1))+
+    scale_x_discrete(labels = cruises2)+
     labs(x="Cruise (Season.Year, where W = winter and S = summer)")+
-    ggtitle(paste0("Proportion of NASC in Layer"," ", lyr))+ theme(legend.position="none")
+    ggtitle(paste0("Boxplot of mean Sv in Layer"," ", lyr,  " ","for", " ", rgn))+ theme(legend.position="none")
  
   # print(g)
 #   ggsave(png, g)
 }
 
-p1 <- depth_plot("1")
-p2 <- depth_plot("2")
-p3 <- depth_plot("3")
-p4 <- depth_plot("4")
-p5 <- depth_plot("5")
-p6 <- depth_plot("6")
-p7 <- depth_plot("7")
-p8 <- depth_plot("8")
-p9 <- depth_plot("9")
+p1 <- depth_plot("1", "Baja")
+p2 <- depth_plot("2", "Baja")
+p3 <- depth_plot("3", "Baja")
+p4 <- depth_plot("4", "Baja")
+p5 <- depth_plot("5", "Baja")
+p6 <- depth_plot("6", "Baja")
+p7 <- depth_plot("7", "Baja")
+p8 <- depth_plot("8", "Baja")
+p9 <- depth_plot("9", "Baja")
 
 multiplot(p1,p2,p3,p4,p5,p6,p7,p8,p9, cols = 3)
+
+```
+
+
+#### Sonora 
+```{r plot_depth_dist_by_region_boxplot_s, echo = FALSE, fig.width=20, fig.height=15}
+acousticdata10 = subset(acousticdata10,Sv_mean > -900)
+
+depth_plot <- function(lyr, rgn){ # cntry <- "Canada"
+  
+  #browser()
+#   png <- paste0("cruise", cruse, ".png")
+#   cat("cruise_plot(", cruse, ") -> ", png, "\n")
+#   
+  g <- acousticdata10 %>%
+    filter(Layer == lyr) %>%
+    filter(region == rgn) %>%
+    ggplot(aes(cpoly, Sv_mean)) + 
+    geom_boxplot() + scale_fill_brewer(palette = "RdYlBu")+
+    scale_x_discrete(labels = cruises2)+
+    labs(x="Cruise (Season.Year, where W = winter and S = summer)")+
+    ggtitle(paste0("Boxplot of mean Sv in Layer"," ", lyr, " ","for", " ", rgn))+ theme(legend.position="none")
+ 
+  # print(g)
+#   ggsave(png, g)
+}
+
+p1 <- depth_plot("1", "Sonora")
+p2 <- depth_plot("2", "Sonora")
+p3 <- depth_plot("3", "Sonora")
+p4 <- depth_plot("4", "Sonora")
+p5 <- depth_plot("5", "Sonora")
+p6 <- depth_plot("6", "Sonora")
+p7 <- depth_plot("7", "Sonora")
+p8 <- depth_plot("8", "Sonora")
+p9 <- depth_plot("9", "Sonora")
+
+multiplot(p1,p2,p3,p4,p5,p6,p7,p8,p9, cols = 3)
+
+```
+
+#### Central 
+```{r plot_depth_dist_by_region_boxplot_c, echo = FALSE, fig.width=20, fig.height=15}
+acousticdata10 = subset(acousticdata10,Sv_mean > -900)
+
+depth_plot <- function(lyr, rgn){ # cntry <- "Canada"
+  
+  #browser()
+#   png <- paste0("cruise", cruse, ".png")
+#   cat("cruise_plot(", cruse, ") -> ", png, "\n")
+#   
+  g <- acousticdata10 %>%
+    filter(Layer == lyr) %>%
+    filter(region == rgn) %>%
+    ggplot(aes(cpoly, Sv_mean)) + 
+    geom_boxplot() + scale_fill_brewer(palette = "RdYlBu")+
+    scale_x_discrete(labels = cruises2)+
+    labs(x="Cruise (Season.Year, where W = winter and S = summer)")+
+    ggtitle(paste0("Boxplot of mean Sv in Layer"," ", lyr, " ","for", " ", rgn))+ theme(legend.position="none")
+ 
+  # print(g)
+#   ggsave(png, g)
+}
+
+p1 <- depth_plot("1", "Central")
+p2 <- depth_plot("2", "Central")
+p3 <- depth_plot("3", "Central")
+p4 <- depth_plot("4", "Central")
+p5 <- depth_plot("5", "Central")
+p6 <- depth_plot("6", "Central")
+p7 <- depth_plot("7", "Central")
+p8 <- depth_plot("8", "Central")
+p9 <- depth_plot("9", "Central")
+
+multiplot(p1,p2,p3,p4,p5,p6,p7,p8,p9, cols = 3)
+
+```
+
+#### Northern 
+```{r plot_depth_dist_by_region_boxplot_n, echo = FALSE, fig.width=20, fig.height=15}
+acousticdata10 = subset(acousticdata10,Sv_mean > -900)
+
+depth_plot <- function(lyr, rgn){ # cntry <- "Canada"
+  
+  #browser()
+#   png <- paste0("cruise", cruse, ".png")
+#   cat("cruise_plot(", cruse, ") -> ", png, "\n")
+#   
+  g <- acousticdata10 %>%
+    filter(Layer == lyr) %>%
+    filter(region == rgn) %>%
+    ggplot(aes(cpoly, Sv_mean)) + 
+    geom_boxplot() + scale_fill_brewer(palette = "RdYlBu")+
+    scale_x_discrete(labels = cruises2)+
+    labs(x="Cruise (Season.Year, where W = winter and S = summer)")+
+    ggtitle(paste0("Boxplot of mean Sv in Layer"," ", lyr, " ", "for", " ", rgn))+ theme(legend.position="none")
+ 
+  # print(g)
+#   ggsave(png, g)
+}
+
+# the 
+p1 <- depth_plot("1", "Northern")
+p2 <- depth_plot("2", "Northern")
+p3 <- depth_plot("3", "Northern")
+p4 <- depth_plot("4", "Northern")
+p5 <- depth_plot("5", "Northern")
+p6 <- depth_plot("6", "Northern")
+p7 <- depth_plot("7", "Northern")
+p8 <- depth_plot("8", "Northern")
+p9 <- depth_plot("9", "Northern")
+
+multiplot(p1,p2,p3,p4,p5,p6,p7,p8,p9, cols = 3)
+
+```
+
+```{r anova_model_10m_mods, echo = FALSE}
+acousticdata10$season = as.factor(acousticdata10$season)
+acousticdata10$region = as.factor(acousticdata10$region)
+acousticdata10$year = as.factor(acousticdata10$year)
+acousticdata10$cruise = as.factor(acousticdata10$cruise)
+acousticdata10$Layer = as.factor(acousticdata10$Layer)
+```
+##### ANOVA model 10m: (NASC ~ cruise* Layer *region)
+
+```{r anova_model_10m}
+aov.acoustics.nasc <- aov(NASC ~ cruise*Layer*region, data = acousticdata10)
+summary(aov.acoustics.nasc)
+
+```
+
+
+```{r plot_depth_dist_by_region_boxplot_nasc, echo = FALSE, fig.width=20, fig.height=15}
+# acousticdata10 = subset(acousticdata10,log(NASC) < 12)
+# 
+# depth_plot_nasc <- function(lyr){ # cntry <- "Canada"
+#   
+#   #browser()
+# #   png <- paste0("cruise", cruse, ".png")
+# #   cat("cruise_plot(", cruse, ") -> ", png, "\n")
+# #   
+#   g <- acousticdata10 %>%
+#     filter(Layer == lyr) %>%
+#     ggplot(aes(cpoly, log(NASC), fill = region)) + 
+#     geom_boxplot() + scale_fill_brewer(palette = "RdYlBu")+
+#     scale_x_discrete(labels = cruises)+
+#     theme(axis.text.x=element_text(hjust=1))+
+#     labs(x="Cruise (Season.Year, where W = winter and S = summer)")+
+#     ggtitle(paste0("Boxplot of log(NASC) in Layer"," ", lyr))+ theme(legend.position="none")
+#  
+#   # print(g)
+# #   ggsave(png, g)
+# }
+# 
+# p1 <- depth_plot_nasc("1")
+# p2 <- depth_plot_nasc("2")
+# p3 <- depth_plot_nasc("3")
+# p4 <- depth_plot_nasc("4")
+# p5 <- depth_plot_nasc("5")
+# p6 <- depth_plot_nasc("6")
+# p7 <- depth_plot_nasc("7")
+# p8 <- depth_plot_nasc("8")
+# p9 <- depth_plot_nasc("9")
+# 
+# multiplot(p1,p2,p3,p4,p5,p6,p7,p8,p9, cols = 3)
+
 ```
