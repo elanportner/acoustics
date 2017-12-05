@@ -11,24 +11,51 @@ output: html_document
 
 ![](/Users/elanportner/github/Acoustics/acoustics/images/acoustics.gif)
 
+****
 ![](//Users/elanportner/github/Acoustics/acoustics/images/Cruise-01-nighttime.gif)
+
+****
 
 ![](//Users/elanportner/github/Acoustics/acoustics/images/Cruise-02-nighttime.gif)
 
+****
+
 ![](//Users/elanportner/github/Acoustics/acoustics/images/Cruise-03-nighttime.gif)
+
+****
 
 ![](//Users/elanportner/github/Acoustics/acoustics/images/Cruise-04-nighttime.gif)
 
+****
+
 ![](//Users/elanportner/github/Acoustics/acoustics/images/Cruise-06-nighttime.gif)
+
+****
 
 ![](//Users/elanportner/github/Acoustics/acoustics/images/Cruise-07-nighttime.gif)
 
+****
+
 ![](//Users/elanportner/github/Acoustics/acoustics/images/Cruise-08-nighttime.gif)
+
+****
 
 ![](//Users/elanportner/github/Acoustics/acoustics/images/Cruise-09-nighttime.gif)
 
+****
+
 ![](//Users/elanportner/github/Acoustics/acoustics/images/Cruise-10-nighttime.gif)
+
+****
 
 ![](//Users/elanportner/github/Acoustics/acoustics/images/Cruise-11-nighttime.gif)
 
+****
+
 ![](//Users/elanportner/github/Acoustics/acoustics/images/Cruise-12-nighttime.gif)
+
+****
+
+### Distribution of daytime acoustic signal in the GOC 2005-2017. 
+
+#####GIF is followed by individual figures
