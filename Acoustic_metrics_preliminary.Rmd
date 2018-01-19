@@ -80,7 +80,6 @@ acousticmetrics = acousticmetrics[-I,]
 ### 668 data points removed with above code
 ```
 
-#excluding data from waters shallower than 50m
 ```{r plot_cruise_track,include = FALSE}
 
 ##### plot google map overlaid with cruise tracks ######
@@ -115,6 +114,7 @@ p
 ```
 
 ##### Data was subsetted by time of day (nighttime = 7pm-6am)
+######excluding data from waters shallower than 50m
 ##### Boxplot of mean_range by cruise*region for data extracted from upper water column (10-200m) in 1km chunks
 ```{r summary_boxplot mean_range, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9}
 ### create vector of simplified labels 
@@ -126,6 +126,26 @@ cruises2 = c("W.05", "W.07", "S.07", "W.10","W.11", "S.12","S.13", "W.14","S.14"
 # Plot boxplots of scattering area within each polygon by cruise 
 cruisePoly <- ggplot(acousticmetrics, aes(cpoly, mean_range, fill = region)) + geom_boxplot() 
 cruisePoly = cruisePoly +scale_x_discrete(labels = cruises)+theme(axis.text.x=element_text(hjust=1))
+cruisePoly = cruisePoly + labs(x="Cruise (Season.Year, where W = winter and S = summer)")
+cruisePoly
+```
+
+##### Boxplot of mean_range by cruise*region for data extracted from upper water column (10-200m) in 1km chunks, *by bottom depth group*
+```{r summary_boxplot mean_range by bottom depth, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9}
+### divide into two bottom depth bins
+acousticmetrics$depth <- ifelse(acousticmetrics$Exclude_below_line_depth_mean >200, ">200", "<200")
+# Plot boxplots of scattering area within each polygon by cruise 
+cruisePoly <- ggplot(acousticmetrics, aes(cpoly, mean_range, fill = region)) + geom_boxplot() +facet_wrap(~depth, ncol = 1)
+cruisePoly = cruisePoly +scale_x_discrete(labels = cruises)+theme(axis.text.x=element_text(hjust=1))
+cruisePoly = cruisePoly + labs(x="Cruise (Season.Year, where W = winter and S = summer)")
+cruisePoly
+```
+
+##### Boxplot of mean_range by cruise*region for data extracted from upper water column (10-200m) in 1km chunks, *by bottom depth group by region*
+```{r summary_boxplot mean_range by bottom depth by region, echo=FALSE, message=FALSE, warning=FALSE, fig.width=15, fig.height= 12}
+acousticmetrics$cruise = as.factor(acousticmetrics$cruise)
+cruisePoly <- ggplot(acousticmetrics, aes(cruise, mean_range, fill = region)) + geom_boxplot() +facet_wrap(~region*depth, ncol = 4)
+cruisePoly = cruisePoly +scale_x_discrete(labels = cruises2)+theme(axis.text.x=element_text(hjust=1))+ theme(legend.position="none")+scale_y_reverse()
 cruisePoly = cruisePoly + labs(x="Cruise (Season.Year, where W = winter and S = summer)")
 cruisePoly
 ```
@@ -168,7 +188,46 @@ cruise_plot <- function(cruse, seas, yr){ # cntry <- "Canada"
   g <- ametricno2 %>%
     filter(cruise == cruse) %>%
     ggplot(aes(x=mean_dev, y=log(NASC), group = cruise)) +
-    geom_point(alpha=0.5)+
+    geom_point(alpha=0.4)+
+    scale_x_continuous(limits = c(4, 64))+
+    scale_y_continuous(limits = c(1, 12))+
+    xlab("Mean Absolute Deviation") + 
+    ylab("log(NASC)")+ 
+    ggtitle(paste0("Cruise", " ", cruse, " ", "-", " ", seas, " ", yr))
+  # print(g)
+#   ggsave(png, g)
+}
+
+fig1 <- cruise_plot("1", "Winter", "2005")
+fig3 <- cruise_plot("3", "Summer", "2007")
+fig4 <- cruise_plot("4", "Winter", "2010")
+fig6 <- cruise_plot("6", "Winter", "2011")
+fig7 <- cruise_plot("7", "Summer", "2012")
+fig8 <- cruise_plot("8", "Summer", "2013")
+fig9 <- cruise_plot("9", "Winter", "2014")
+fig10 <- cruise_plot("10", "Summer", "2014")
+fig11 <- cruise_plot("11", "Summer", "2016")
+fig12 <- cruise_plot("12", "Summer", "2017")
+
+multiplot(fig1, fig3, fig4, fig6, fig7, fig8, fig9, fig10, fig11, fig12, cols = 2)
+```
+
+##### Relationship between NASC and mean_dev for bottom depth > 200m (cruise 2 has been removed). 13538 out of 17760km
+```{r summary_scatter NASC*mean_dev depth200, echo=FALSE, message=FALSE, warning=FALSE, fig.width=12, fig.height=10}
+
+ametricno2.200 = ametricno2
+ametricno2.200 = subset(ametricno2.200, Exclude_below_line_depth_mean > 200)
+
+cruise_plot <- function(cruse, seas, yr){ # cntry <- "Canada"
+  
+  #browser()
+#   png <- paste0("cruise", cruse, ".png")
+#   cat("cruise_plot(", cruse, ") -> ", png, "\n")
+#   
+  g <- ametricno2.200 %>%
+    filter(cruise == cruse) %>%
+    ggplot(aes(x=mean_dev, y=log(NASC), group = cruise)) +
+    geom_point(alpha=0.4)+
     scale_x_continuous(limits = c(4, 64))+
     scale_y_continuous(limits = c(1, 12))+
     xlab("Mean Absolute Deviation") + 
@@ -205,12 +264,49 @@ cruise_plot <- function(cruse, reg, seas, yr){ # cntry <- "Canada"
   g <- ametricno2 %>%
     filter(cruise == cruse & region == reg) %>%
     ggplot(aes(x=mean_dev, y=log(NASC), group = cruise)) +
-    geom_point(color = "darkred", alpha = 0.5)+
+    geom_point(color = "darkred", alpha = 0.4)+
     scale_x_continuous(limits = c(4, 64))+
     scale_y_continuous(limits = c(1, 12))+
     xlab("Mean Absolute Deviation") + 
     ylab("log(NASC)")+ 
     ggtitle(paste0("Cruise", " ", cruse, " ", "-", " ", seas, " ", yr, " "," : "," ", reg))
+  # print(g)
+#   ggsave(png, g)
+}
+
+fig1 <- cruise_plot("1", "Baja","Winter", "2005")
+fig3 <- cruise_plot("3", "Baja","Summer", "2007")
+fig4 <- cruise_plot("4", "Baja","Winter", "2010")
+fig6 <- cruise_plot("6", "Baja","Winter", "2011")
+fig7 <- cruise_plot("7", "Baja","Summer", "2012")
+fig8 <- cruise_plot("8", "Baja","Summer", "2013")
+fig9 <- cruise_plot("9", "Baja","Winter", "2014")
+fig10 <- cruise_plot("10", "Baja","Summer", "2014")
+fig11 <- cruise_plot("11", "Baja","Summer", "2016")
+fig12 <- cruise_plot("12", "Baja","Summer", "2017")
+
+multiplot(fig1, fig3, fig4, fig6, fig7, fig8, fig9, fig10, fig11, fig12, cols = 2)
+```
+
+##### Relationship between NASC and mean_dev by region: Baja, bottom > 200m
+
+```{r summary_scatter NASC*mean_dev Baja 200, echo=FALSE, message=FALSE, warning=FALSE, fig.width=12, fig.height=10}
+### by region
+cruise_plot <- function(cruse, reg, seas, yr){ # cntry <- "Canada"
+  
+  #browser()
+#   png <- paste0("cruise", cruse, ".png")
+#   cat("cruise_plot(", cruse, ") -> ", png, "\n")
+#   
+  g <- ametricno2.200 %>%
+    filter(cruise == cruse & region == reg) %>%
+    ggplot(aes(x=mean_dev, y=log(NASC), group = cruise)) +
+    geom_point(color = "darkred", alpha = 0.4)+
+    scale_x_continuous(limits = c(4, 64))+
+    scale_y_continuous(limits = c(1, 12))+
+    xlab("Mean Absolute Deviation") + 
+    ylab("log(NASC)")+ 
+    ggtitle(paste0("Cruise", " ", cruse, " ", "-", " ", seas, " ", yr, " "," : "," ", reg, " ", "depth >200m"))
   # print(g)
 #   ggsave(png, g)
 }
@@ -242,12 +338,49 @@ cruise_plot <- function(cruse, reg, seas, yr){ # cntry <- "Canada"
   g <- ametricno2 %>%
     filter(cruise == cruse & region == reg) %>%
     ggplot(aes(x=mean_dev, y=log(NASC), group = cruise)) +
-    geom_point(color = "blue", alpha = 0.5)+
+    geom_point(color = "blue", alpha = 0.4)+
     scale_x_continuous(limits = c(4, 64))+
     scale_y_continuous(limits = c(1, 12))+
     xlab("Mean Absolute Deviation") + 
     ylab("log(NASC)")+ 
     ggtitle(paste0("Cruise", " ", cruse, " ", "-", " ", seas, " ", yr, " "," : "," ", reg))
+  # print(g)
+#   ggsave(png, g)
+}
+
+fig1 <- cruise_plot("1", "Sonora","Winter", "2005")
+fig3 <- cruise_plot("3", "Sonora","Summer", "2007")
+fig4 <- cruise_plot("4", "Sonora","Winter", "2010")
+fig6 <- cruise_plot("6", "Sonora","Winter", "2011")
+fig7 <- cruise_plot("7", "Sonora","Summer", "2012")
+fig8 <- cruise_plot("8", "Sonora","Summer", "2013")
+fig9 <- cruise_plot("9", "Sonora","Winter", "2014")
+fig10 <- cruise_plot("10", "Sonora","Summer", "2014")
+fig11 <- cruise_plot("11", "Sonora","Summer", "2016")
+fig12 <- cruise_plot("12", "Sonora","Summer", "2017")
+
+multiplot(fig1, fig3, fig4, fig6, fig7, fig8, fig9, fig10, fig11, fig12, cols = 2)
+```
+
+##### Relationship between NASC and mean_dev by region: Sonora, bottom > 200m
+
+```{r summary_scatter NASC*mean_dev Sonora 200, echo=FALSE, message=FALSE, warning=FALSE, fig.width=12, fig.height=10}
+### by region
+cruise_plot <- function(cruse, reg, seas, yr){ # cntry <- "Canada"
+  
+  #browser()
+#   png <- paste0("cruise", cruse, ".png")
+#   cat("cruise_plot(", cruse, ") -> ", png, "\n")
+#   
+  g <- ametricno2.200 %>%
+    filter(cruise == cruse & region == reg) %>%
+    ggplot(aes(x=mean_dev, y=log(NASC), group = cruise)) +
+    geom_point(color = "blue", alpha = 0.4)+
+    scale_x_continuous(limits = c(4, 64))+
+    scale_y_continuous(limits = c(1, 12))+
+    xlab("Mean Absolute Deviation") + 
+    ylab("log(NASC)")+ 
+    ggtitle(paste0("Cruise", " ", cruse, " ", "-", " ", seas, " ", yr, " "," : "," ", reg, " ", "depth > 200m"))
   # print(g)
 #   ggsave(png, g)
 }
@@ -279,12 +412,49 @@ cruise_plot <- function(cruse, reg, seas, yr){ # cntry <- "Canada"
   g <- ametricno2 %>%
     filter(cruise == cruse & region == reg) %>%
     ggplot(aes(x=mean_dev, y=log(NASC), group = cruise)) +
-    geom_point(color = "green4", alpha = 0.5)+
+    geom_point(color = "green4", alpha = 0.4)+
     scale_x_continuous(limits = c(4, 64))+
     scale_y_continuous(limits = c(1, 12))+
     xlab("Mean Absolute Deviation") + 
     ylab("log(NASC)")+ 
     ggtitle(paste0("Cruise", " ", cruse, " ", "-", " ", seas, " ", yr, " "," : "," ", reg))
+  # print(g)
+#   ggsave(png, g)
+}
+
+fig1 <- cruise_plot("1", "Central","Winter", "2005")
+fig3 <- cruise_plot("3", "Central","Summer", "2007")
+fig4 <- cruise_plot("4", "Central","Winter", "2010")
+fig6 <- cruise_plot("6", "Central","Winter", "2011")
+fig7 <- cruise_plot("7", "Central","Summer", "2012")
+fig8 <- cruise_plot("8", "Central","Summer", "2013")
+fig9 <- cruise_plot("9", "Central","Winter", "2014")
+fig10 <- cruise_plot("10", "Central","Summer", "2014")
+fig11 <- cruise_plot("11", "Central","Summer", "2016")
+fig12 <- cruise_plot("12", "Central","Summer", "2017")
+
+multiplot(fig1, fig3, fig4, fig6, fig7, fig8, fig9, fig10, fig11, fig12, cols = 2)
+```
+
+##### Relationship between NASC and mean_dev by region: Central, bottom >200m
+
+```{r summary_scatter NASC*mean_dev Central 200, echo=FALSE, message=FALSE, warning=FALSE, fig.width=12, fig.height=10}
+### by region
+cruise_plot <- function(cruse, reg, seas, yr){ # cntry <- "Canada"
+  
+  #browser()
+#   png <- paste0("cruise", cruse, ".png")
+#   cat("cruise_plot(", cruse, ") -> ", png, "\n")
+#   
+  g <- ametricno2.200 %>%
+    filter(cruise == cruse & region == reg) %>%
+    ggplot(aes(x=mean_dev, y=log(NASC), group = cruise)) +
+    geom_point(color = "green4", alpha = 0.4)+
+    scale_x_continuous(limits = c(4, 64))+
+    scale_y_continuous(limits = c(1, 12))+
+    xlab("Mean Absolute Deviation") + 
+    ylab("log(NASC)")+ 
+    ggtitle(paste0("Cruise", " ", cruse, " ", "-", " ", seas, " ", yr, " "," : "," ", reg, " ", ">200m"))
   # print(g)
 #   ggsave(png, g)
 }
@@ -316,7 +486,7 @@ cruise_plot <- function(cruse, reg, seas, yr){ # cntry <- "Canada"
   g <- ametricno2 %>%
     filter(cruise == cruse & region == reg) %>%
     ggplot(aes(x=mean_dev, y=log(NASC), group = cruise)) +
-    geom_point(color = "purple", alpha = 0.5)+
+    geom_point(color = "purple", alpha = 0.4)+
     scale_x_continuous(limits = c(4, 64))+
     scale_y_continuous(limits = c(1, 12))+
     xlab("Mean Absolute Deviation") + 
@@ -339,3 +509,41 @@ fig12 <- cruise_plot("12", "Northern","Summer", "2017")
 
 multiplot(fig1, fig3, fig4, fig6, fig7, fig8, fig9, fig10, fig11, fig12, cols = 2)
 ```
+
+##### Relationship between NASC and mean_dev by region: Northern, depth >200m
+
+```{r summary_scatter NASC*mean_dev Northern 200, echo=FALSE, message=FALSE, warning=FALSE, fig.width=12, fig.height=10}
+### by region
+cruise_plot <- function(cruse, reg, seas, yr){ # cntry <- "Canada"
+  
+  #browser()
+#   png <- paste0("cruise", cruse, ".png")
+#   cat("cruise_plot(", cruse, ") -> ", png, "\n")
+#   
+  g <- ametricno2.200 %>%
+    filter(cruise == cruse & region == reg) %>%
+    ggplot(aes(x=mean_dev, y=log(NASC), group = cruise)) +
+    geom_point(color = "purple", alpha = 0.4)+
+    scale_x_continuous(limits = c(4, 64))+
+    scale_y_continuous(limits = c(1, 12))+
+    xlab("Mean Absolute Deviation") + 
+    ylab("log(NASC)")+ 
+    ggtitle(paste0("Cruise", " ", cruse, " ", "-", " ", seas, " ", yr, " "," : "," ", reg, " ", ">200m"))
+  # print(g)
+#   ggsave(png, g)
+}
+
+fig1 <- cruise_plot("1", "Northern","Winter", "2005")
+fig3 <- cruise_plot("3", "Northern","Summer", "2007")
+fig4 <- cruise_plot("4", "Northern","Winter", "2010")
+fig6 <- cruise_plot("6", "Northern","Winter", "2011")
+fig7 <- cruise_plot("7", "Northern","Summer", "2012")
+fig8 <- cruise_plot("8", "Northern","Summer", "2013")
+fig9 <- cruise_plot("9", "Northern","Winter", "2014")
+fig10 <- cruise_plot("10", "Northern","Summer", "2014")
+fig11 <- cruise_plot("11", "Northern","Summer", "2016")
+fig12 <- cruise_plot("12", "Northern","Summer", "2017")
+
+multiplot(fig1, fig3, fig4, fig6, fig7, fig8, fig9, fig10, fig11, fig12, cols = 2)
+```
+
