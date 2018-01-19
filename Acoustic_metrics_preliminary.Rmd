@@ -1,0 +1,341 @@
+---
+title: "Acoustic_metrics"
+author: "Elan Portner"
+date: "1/17/2018"
+output: html_document
+---
+
+### Exploring four acoustic metrics of food availability: **NASC, mean median depth, mean absolute deviation, Sv max**
+
+#### Firts step was to re-draw regions by
+##### 1. Cropping regions of low density coverage in southern and northern gulf
+##### 2. Adjusting border between norther and central gulf
+##### 3. Export metrics defined by Elan, Chad, and Kelly
+
+
+```{r get necessary packages, include = FALSE}
+# 1) clear workspace
+rm(list = ls(all = TRUE)); 
+
+# 2) load packages: (fyi, you probably don't need all of these for this code, but good ones to have for spatial R stuff...)
+## if you need to install any, uncomment and run (shown are some examples below)...
+
+library(ncdf4); library(ncdf)
+library(RNetCDF)
+library(raster)
+library(maps)
+library(mapdata)
+library(maptools)
+library(rgdal)
+library(move)
+library(mapproj)
+library(sp)
+require(dismo)
+library(ggplot2)
+library(ggmap)
+library(RColorBrewer)
+library(reshape2)
+library(mapplots)
+library(rgeos)
+library(polyclip)
+library(spatstat)
+library(tidyverse)
+library(Rmisc)
+
+```
+
+
+
+```{r get_data, include = FALSE}
+#read in data file - see "~/Assigning_regions_to_acoustics.R" for code to assign data to regions
+acoustics = read.csv("~/Documents/R/Dosidicus/acoustics/acousticdata_uper200m_with_regions.csv") 
+acousticdata = acoustics
+### remove outliers for preliminary figure to improve visualization###
+I = which(log(acousticdata$NASC)>12|log(acousticdata$NASC)<0)
+acousticdata = acousticdata[-I,]
+acousticdata$fill = 1
+
+acousticdata$Interval = as.character(acousticdata$Interval)
+acousticdata$cruise = as.character(acousticdata$cruise)
+acousticdata$cruise_int = paste(acousticdata$cruise, acousticdata$Interval, sep = ".")
+### 9 data points removed with above code ###
+
+### Load metric data
+metrics = read.csv("~/Documents/R/Dosidicus/acoustics/acoustic_metrics_01-18-18.csv")
+
+metrics$interval = metrics$Ping_index+1
+metrics$cruise_int = paste(metrics$cruise, metrics$interval, sep = ".")
+
+#subset to get rid of rows that will be duplicate when merged with "acousticdata"
+metrics = metrics[, c(15,18,19,23,24,26)]
+
+acousticmetrics = merge(acousticdata, metrics, by = c("cpoly", "cruise_int", "region"), all = F)
+
+### exclude data from waters shallower than 50m
+I = which(acousticmetrics$Exclude_below_line_depth_mean <50)
+acousticmetrics = acousticmetrics[-I,]
+
+I = which(acousticmetrics$mean_range <10)
+acousticmetrics = acousticmetrics[-I,]
+### 668 data points removed with above code
+```
+
+#excluding data from waters shallower than 50m
+```{r plot_cruise_track,include = FALSE}
+
+##### plot google map overlaid with cruise tracks ######
+
+#need to convert longitude back to E/W for plotting map with google
+acousticdata$Lon_M = acousticdata$Lon_M - 360
+
+#set bounds of map using coordinates of our data
+bc_bbox <- make_bbox(lat = Lat_M, lon = Lon_M, data = acousticdata)
+bc_bbox
+#>       left     bottom      right        top 
+#> -133.63297   47.92497 -122.33652   55.80833
+
+# grab the maps from google
+bc_big <- get_map(location = c(left =-117.04904, bottom = 22.41260, right = -104.20950, top = 34.77702), source = "google", maptype = "satellite")
+#> Warning: bounding box given to google - spatial extent only approximate.
+#> converting bounding box to center/zoom specification. (experimental)
+#> Map from URL : http://maps.googleapis.com/maps/api/staticmap?center=51.86665,-127.98475&zoom=6&size=640x640&scale=2&maptype=terrain&language=en-EN&sensor=false
+
+
+```
+
+### Map of cruise track
+```{r, echo = FALSE, warning = FALSE}
+# plot the points and color them by sector
+p <- ggmap(bc_big) + 
+  geom_point(data = acousticdata, mapping = aes(x = Lon_M, y = Lat_M, color = region), size = 0.3, stroke = 0, alpha = 0.9)+
+  guides(colour = guide_legend(override.aes = list(size=2, stroke=1.5)))
+
+p
+
+```
+
+##### Data was subsetted by time of day (nighttime = 7pm-6am)
+##### Boxplot of mean_range by cruise*region for data extracted from upper water column (10-200m) in 1km chunks
+```{r summary_boxplot mean_range, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9}
+### create vector of simplified labels 
+cruises = c("", "", "W.05", "","", "", "W.07", "","", "", "S.07", "",
+            "", "", "W.10", "","", "", "W.11", "","", "", "S.12", "",
+            "", "", "S.13", "","", "", "W.14", "","", "", "S.14", "",
+            "", "", "S.16", "","", "", "S.17", "")
+cruises2 = c("W.05", "W.07", "S.07", "W.10","W.11", "S.12","S.13", "W.14","S.14","S.16","S.17")
+# Plot boxplots of scattering area within each polygon by cruise 
+cruisePoly <- ggplot(acousticmetrics, aes(cpoly, mean_range, fill = region)) + geom_boxplot() 
+cruisePoly = cruisePoly +scale_x_discrete(labels = cruises)+theme(axis.text.x=element_text(hjust=1))
+cruisePoly = cruisePoly + labs(x="Cruise (Season.Year, where W = winter and S = summer)")
+cruisePoly
+```
+
+##### Boxplot of mean_dev by cruise*region for data extracted from upper water column (10-200m) in 1km chunks
+```{r summary_boxplot mean_dev, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9}
+# Plot boxplots of scattering area within each polygon by cruise 
+cruisePoly <- ggplot(acousticmetrics, aes(cpoly, mean_dev, fill = region)) + geom_boxplot() 
+cruisePoly = cruisePoly +scale_x_discrete(labels = cruises)+theme(axis.text.x=element_text(hjust=1))
+cruisePoly = cruisePoly + labs(x="Cruise (Season.Year, where W = winter and S = summer)")
+cruisePoly
+```
+
+##### Boxplot of mean_maxsv by cruise*region for data extracted from upper water column (10-200m) in 1km chunks.
+
+###### data were not successfully extraced for S.13, S.14, or S.17.
+###### Something is wrong with how data from W.07 were treated
+```{r summary_boxplot mean_maxsv, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9}
+I <- which(acousticmetrics$mean_maxsv <(77*-1))
+acousticmetrics <- acousticmetrics[-I,]
+# Plot boxplots of scattering area within each polygon by cruise 
+cruisePoly <- ggplot(acousticmetrics, aes(cpoly, mean_maxsv, fill = region)) + geom_boxplot() 
+cruisePoly = cruisePoly +scale_x_discrete(labels = cruises)+theme(axis.text.x=element_text(hjust=1))
+cruisePoly = cruisePoly + labs(x="Cruise (Season.Year, where W = winter and S = summer)")
+cruisePoly
+```
+
+##### Relationship between NASC and mean_dev
+```{r summary_scatter NASC*mean_dev, echo=FALSE, message=FALSE, warning=FALSE, fig.width=12, fig.height=10}
+ametricno2 = acousticmetrics
+I = which(ametricno2$cruise == 2)
+ametricno2 = ametricno2[-I,]
+
+cruise_plot <- function(cruse, seas, yr){ # cntry <- "Canada"
+  
+  #browser()
+#   png <- paste0("cruise", cruse, ".png")
+#   cat("cruise_plot(", cruse, ") -> ", png, "\n")
+#   
+  g <- ametricno2 %>%
+    filter(cruise == cruse) %>%
+    ggplot(aes(x=mean_dev, y=log(NASC), group = cruise)) +
+    geom_point(alpha=0.5)+
+    scale_x_continuous(limits = c(4, 64))+
+    scale_y_continuous(limits = c(1, 12))+
+    xlab("Mean Absolute Deviation") + 
+    ylab("log(NASC)")+ 
+    ggtitle(paste0("Cruise", " ", cruse, " ", "-", " ", seas, " ", yr))
+  # print(g)
+#   ggsave(png, g)
+}
+
+fig1 <- cruise_plot("1", "Winter", "2005")
+fig3 <- cruise_plot("3", "Summer", "2007")
+fig4 <- cruise_plot("4", "Winter", "2010")
+fig6 <- cruise_plot("6", "Winter", "2011")
+fig7 <- cruise_plot("7", "Summer", "2012")
+fig8 <- cruise_plot("8", "Summer", "2013")
+fig9 <- cruise_plot("9", "Winter", "2014")
+fig10 <- cruise_plot("10", "Summer", "2014")
+fig11 <- cruise_plot("11", "Summer", "2016")
+fig12 <- cruise_plot("12", "Summer", "2017")
+
+multiplot(fig1, fig3, fig4, fig6, fig7, fig8, fig9, fig10, fig11, fig12, cols = 2)
+```
+
+##### Relationship between NASC and mean_dev by region: Baja
+
+```{r summary_scatter NASC*mean_dev Baja, echo=FALSE, message=FALSE, warning=FALSE, fig.width=12, fig.height=10}
+### by region
+cruise_plot <- function(cruse, reg, seas, yr){ # cntry <- "Canada"
+  
+  #browser()
+#   png <- paste0("cruise", cruse, ".png")
+#   cat("cruise_plot(", cruse, ") -> ", png, "\n")
+#   
+  g <- ametricno2 %>%
+    filter(cruise == cruse & region == reg) %>%
+    ggplot(aes(x=mean_dev, y=log(NASC), group = cruise)) +
+    geom_point(color = "darkred", alpha = 0.5)+
+    scale_x_continuous(limits = c(4, 64))+
+    scale_y_continuous(limits = c(1, 12))+
+    xlab("Mean Absolute Deviation") + 
+    ylab("log(NASC)")+ 
+    ggtitle(paste0("Cruise", " ", cruse, " ", "-", " ", seas, " ", yr, " "," : "," ", reg))
+  # print(g)
+#   ggsave(png, g)
+}
+
+fig1 <- cruise_plot("1", "Baja","Winter", "2005")
+fig3 <- cruise_plot("3", "Baja","Summer", "2007")
+fig4 <- cruise_plot("4", "Baja","Winter", "2010")
+fig6 <- cruise_plot("6", "Baja","Winter", "2011")
+fig7 <- cruise_plot("7", "Baja","Summer", "2012")
+fig8 <- cruise_plot("8", "Baja","Summer", "2013")
+fig9 <- cruise_plot("9", "Baja","Winter", "2014")
+fig10 <- cruise_plot("10", "Baja","Summer", "2014")
+fig11 <- cruise_plot("11", "Baja","Summer", "2016")
+fig12 <- cruise_plot("12", "Baja","Summer", "2017")
+
+multiplot(fig1, fig3, fig4, fig6, fig7, fig8, fig9, fig10, fig11, fig12, cols = 2)
+```
+
+##### Relationship between NASC and mean_dev by region: Sonora
+
+```{r summary_scatter NASC*mean_dev Sonora, echo=FALSE, message=FALSE, warning=FALSE, fig.width=12, fig.height=10}
+### by region
+cruise_plot <- function(cruse, reg, seas, yr){ # cntry <- "Canada"
+  
+  #browser()
+#   png <- paste0("cruise", cruse, ".png")
+#   cat("cruise_plot(", cruse, ") -> ", png, "\n")
+#   
+  g <- ametricno2 %>%
+    filter(cruise == cruse & region == reg) %>%
+    ggplot(aes(x=mean_dev, y=log(NASC), group = cruise)) +
+    geom_point(color = "blue", alpha = 0.5)+
+    scale_x_continuous(limits = c(4, 64))+
+    scale_y_continuous(limits = c(1, 12))+
+    xlab("Mean Absolute Deviation") + 
+    ylab("log(NASC)")+ 
+    ggtitle(paste0("Cruise", " ", cruse, " ", "-", " ", seas, " ", yr, " "," : "," ", reg))
+  # print(g)
+#   ggsave(png, g)
+}
+
+fig1 <- cruise_plot("1", "Sonora","Winter", "2005")
+fig3 <- cruise_plot("3", "Sonora","Summer", "2007")
+fig4 <- cruise_plot("4", "Sonora","Winter", "2010")
+fig6 <- cruise_plot("6", "Sonora","Winter", "2011")
+fig7 <- cruise_plot("7", "Sonora","Summer", "2012")
+fig8 <- cruise_plot("8", "Sonora","Summer", "2013")
+fig9 <- cruise_plot("9", "Sonora","Winter", "2014")
+fig10 <- cruise_plot("10", "Sonora","Summer", "2014")
+fig11 <- cruise_plot("11", "Sonora","Summer", "2016")
+fig12 <- cruise_plot("12", "Sonora","Summer", "2017")
+
+multiplot(fig1, fig3, fig4, fig6, fig7, fig8, fig9, fig10, fig11, fig12, cols = 2)
+```
+
+##### Relationship between NASC and mean_dev by region: Central
+
+```{r summary_scatter NASC*mean_dev Central, echo=FALSE, message=FALSE, warning=FALSE, fig.width=12, fig.height=10}
+### by region
+cruise_plot <- function(cruse, reg, seas, yr){ # cntry <- "Canada"
+  
+  #browser()
+#   png <- paste0("cruise", cruse, ".png")
+#   cat("cruise_plot(", cruse, ") -> ", png, "\n")
+#   
+  g <- ametricno2 %>%
+    filter(cruise == cruse & region == reg) %>%
+    ggplot(aes(x=mean_dev, y=log(NASC), group = cruise)) +
+    geom_point(color = "green4", alpha = 0.5)+
+    scale_x_continuous(limits = c(4, 64))+
+    scale_y_continuous(limits = c(1, 12))+
+    xlab("Mean Absolute Deviation") + 
+    ylab("log(NASC)")+ 
+    ggtitle(paste0("Cruise", " ", cruse, " ", "-", " ", seas, " ", yr, " "," : "," ", reg))
+  # print(g)
+#   ggsave(png, g)
+}
+
+fig1 <- cruise_plot("1", "Central","Winter", "2005")
+fig3 <- cruise_plot("3", "Central","Summer", "2007")
+fig4 <- cruise_plot("4", "Central","Winter", "2010")
+fig6 <- cruise_plot("6", "Central","Winter", "2011")
+fig7 <- cruise_plot("7", "Central","Summer", "2012")
+fig8 <- cruise_plot("8", "Central","Summer", "2013")
+fig9 <- cruise_plot("9", "Central","Winter", "2014")
+fig10 <- cruise_plot("10", "Central","Summer", "2014")
+fig11 <- cruise_plot("11", "Central","Summer", "2016")
+fig12 <- cruise_plot("12", "Central","Summer", "2017")
+
+multiplot(fig1, fig3, fig4, fig6, fig7, fig8, fig9, fig10, fig11, fig12, cols = 2)
+```
+
+##### Relationship between NASC and mean_dev by region: Northern
+
+```{r summary_scatter NASC*mean_dev Northern, echo=FALSE, message=FALSE, warning=FALSE, fig.width=12, fig.height=10}
+### by region
+cruise_plot <- function(cruse, reg, seas, yr){ # cntry <- "Canada"
+  
+  #browser()
+#   png <- paste0("cruise", cruse, ".png")
+#   cat("cruise_plot(", cruse, ") -> ", png, "\n")
+#   
+  g <- ametricno2 %>%
+    filter(cruise == cruse & region == reg) %>%
+    ggplot(aes(x=mean_dev, y=log(NASC), group = cruise)) +
+    geom_point(color = "purple", alpha = 0.5)+
+    scale_x_continuous(limits = c(4, 64))+
+    scale_y_continuous(limits = c(1, 12))+
+    xlab("Mean Absolute Deviation") + 
+    ylab("log(NASC)")+ 
+    ggtitle(paste0("Cruise", " ", cruse, " ", "-", " ", seas, " ", yr, " "," : "," ", reg))
+  # print(g)
+#   ggsave(png, g)
+}
+
+fig1 <- cruise_plot("1", "Northern","Winter", "2005")
+fig3 <- cruise_plot("3", "Northern","Summer", "2007")
+fig4 <- cruise_plot("4", "Northern","Winter", "2010")
+fig6 <- cruise_plot("6", "Northern","Winter", "2011")
+fig7 <- cruise_plot("7", "Northern","Summer", "2012")
+fig8 <- cruise_plot("8", "Northern","Summer", "2013")
+fig9 <- cruise_plot("9", "Northern","Winter", "2014")
+fig10 <- cruise_plot("10", "Northern","Summer", "2014")
+fig11 <- cruise_plot("11", "Northern","Summer", "2016")
+fig12 <- cruise_plot("12", "Northern","Summer", "2017")
+
+multiplot(fig1, fig3, fig4, fig6, fig7, fig8, fig9, fig10, fig11, fig12, cols = 2)
+```

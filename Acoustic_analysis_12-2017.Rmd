@@ -634,6 +634,19 @@ I = which(log(acousticdata$NASC)>12|log(acousticdata$NASC)<0)
 acousticdata = acousticdata[-I,]
 acousticdata$fill = 1
 ### 9 data points removed with above code ###
+
+## assign new names to cruises for ease of labelling
+acousticdata$cruise = ifelse(acousticdata$cruise == 1, "1 _ d",
+                          ifelse(acousticdata$cruise == 2, "2 _ d",
+                                 ifelse(acousticdata$cruise == 3, "3 _ d",
+                                        ifelse(acousticdata$cruise == 4, "4 _ d",
+                                               ifelse(acousticdata$cruise == 6, "6 _ d",
+                                                      ifelse(acousticdata$cruise == 7, "7 _ d",
+                                                             ifelse(acousticdata$cruise == 8, "8 _ d",
+                                                                    ifelse(acousticdata$cruise == 9, "9 _ d",
+                                                                           ifelse(acousticdata$cruise == 10, "10 _ d",
+                                                                                  ifelse(acousticdata$cruise == 11, "11 _ d",
+                                                                                         ifelse(acousticdata$cruise == 12, "12 _ d", acousticdata$cruise)))))))))))
 ```
 
 
